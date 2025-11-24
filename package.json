@@ -1,0 +1,52 @@
+{
+  "name": "@rantomah/react-safe-password",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint src --quiet --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write ."
+  },
+  "keywords": [
+    "react",
+    "react-component",
+    "password",
+    "password-input",
+    "password-field",
+    "secure-password",
+    "safe-password",
+    "safe-input",
+    "masked-password",
+    "password-toggle",
+    "show-password",
+    "hide-password",
+    "react-password",
+    "form",
+    "input",
+    "typescript"
+  ],
+  "peerDependencies": {
+    "react": "^18.0.0"
+  },
+  "dependencies": {
+    "classnames": "^2.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "@types/react": "^18.0.28",
+    "@trivago/prettier-plugin-sort-imports": "^5.2.1",
+    "typescript": "^5.9.3",
+    "@typescript-eslint/eslint-plugin": "^8.21.0",
+    "@typescript-eslint/parser": "^8.21.0",
+    "eslint": "^8.38.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.3.4",
+    "prettier": "^3.4.2"
+  }
+}
