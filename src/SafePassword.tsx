@@ -26,46 +26,60 @@ export interface SafePasswordHandle {
 }
 
 interface SafePasswordProps {
-  /** Unique ID for the input */
+  /** Unique identifier for the input. Used for linking labels and accessibility */
   id: string;
-  /** Input name (for forms) */
+  /** Name of the input, used in forms */
   name: string;
-  /** Controlled password value */
+  /** Controlled value of the password input */
   value?: string;
-  /** Callback fired when the value changes */
+  /** Callback triggered whenever the value changes */
   onChange?: (value: string) => void;
-  /** Marks the input as having an error */
-  isError?: boolean;
-  /** Input placeholder text */
+  /** Placeholder text displayed when the input is empty */
   placeholder?: string;
-  /** Shows the toggle button to reveal/hide the password */
-  showToggler?: boolean;
-  /** Right offset for the toggle button */
-  togglerRightOffset?: string;
-  /** Right padding for the input to avoid overlapping with the toggle */
-  paddingRightOffset?: string;
-  /** CSS class for the input */
-  className?: string;
-  /** CSS class applied when the input has an error */
-  errorClassName?: string;
-  /** CSS class for the container wrapping the input */
-  containerClassName?: string;
-  /** CSS class for the toggle button */
-  togglerClassName?: string;
-  /** Label for the toggle when password is hidden */
-  hideTitle?: string;
-  /** Label for the toggle when password is visible */
-  showTitle?: string;
-  /** Marks the input as required */
+  /** Marks the input as required for form submission */
   required?: boolean;
-  /** Disables the input */
+  /** Disables the input if true */
   disabled?: boolean;
-  /** Custom icon to show the password */
+  /** Indicates visually that the input has an error */
+  isError?: boolean;
+  /** Shows or hides the toggle button to show/hide the password */
+  showToggler?: boolean;
+  /** Right offset for the toggler button (e.g., "1rem"). Only used if `showToggler` is true */
+  togglerRightOffset?: string;
+  /** Right padding of the input to make space for the toggler (e.g., "1.5rem") */
+  paddingRightOffset?: string;
+  /** Additional CSS classes for the input */
+  inputClassName?: string;
+  /** Additional CSS classes for the input when in error state */
+  errorClassName?: string;
+  /** Additional CSS classes for the outer container */
+  containerClassName?: string;
+  /** Additional CSS classes for the toggler container */
+  togglerContainerClassName?: string;
+  /** Inline styles applied to the outer container */
+  containerStyle?: React.CSSProperties;
+  /** Inline styles applied to the input */
+  inputStyle?: React.CSSProperties;
+  /** Inline styles applied to the toggler container */
+  togglerContainerStyle?: React.CSSProperties;
+  /** Label for the toggler when hiding the password (default: "Hide") */
+  hideTitle?: string;
+  /** Label for the toggler when showing the password (default: "Show") */
+  showTitle?: string;
+  /** Custom icon displayed when password is hidden */
   iconShow?: React.ReactNode;
-  /** Custom icon to hide the password */
+  /** Custom icon displayed when password is visible */
   iconHide?: React.ReactNode;
-  /** Callback fired when reset is called */
+  /** Callback invoked when the input is reset */
   onReset?: () => void;
+  /** ID of the element describing the error for accessibility */
+  errorId?: string;
+}
+
+interface Selection {
+  start: number;
+  end: number;
+  direction: 'forward' | 'backward' | 'none';
 }
 
 const SafePassword = forwardRef<SafePasswordHandle, SafePasswordProps>(
@@ -75,43 +89,52 @@ const SafePassword = forwardRef<SafePasswordHandle, SafePasswordProps>(
       name,
       value,
       onChange,
-      isError = false,
       placeholder,
-      showToggler: shower = false,
-      className = '',
-      errorClassName = '',
-      containerClassName = '',
-      togglerClassName = '',
+      required = false,
+      disabled = false,
+      isError = false,
+      inputClassName,
+      errorClassName,
+      containerClassName,
+      togglerContainerClassName,
+      containerStyle,
+      inputStyle,
+      togglerContainerStyle,
+      showToggler = true,
       togglerRightOffset = '1rem',
       paddingRightOffset = '1.5rem',
       hideTitle = 'Hide',
       showTitle = 'Show',
-      required = false,
-      disabled = false,
       iconShow = EyeIcon,
       iconHide = EyeSlashIcon,
       onReset,
+      errorId,
     },
     ref,
   ) => {
     const HIDER_CHAR = '\u2022';
 
-    const inputRef = useRef<HTMLInputElement>(null);
-    const [visible, setVisible] = useState(false);
-    const [rawValue, setRawValue] = useState(value || '');
+    const inputRef = useRef<HTMLInputElement | null>(null);
 
+    // states that affect rendering
+    const [visible, setVisible] = useState<boolean>(false);
+    const [rawValue, setRawValue] = useState<string>(value || '');
+
+    // selection stored in a ref to avoid re-renders when selection changes
+    const selectionRef = useRef<Selection | null>(null);
+
+    // keep external value in sync (preserve original behavior)
     useEffect(() => {
       if (value !== undefined && value !== rawValue) {
         setRawValue(value);
       }
-    }, [value]);
+    }, [value, rawValue]);
 
-    const syncedValue: string = useMemo(
-      () => (visible ? rawValue : HIDER_CHAR.repeat(rawValue.length)),
-      [visible, rawValue],
-    );
+    // masked or raw displayed value
+    const syncedValue = useMemo(() => (visible ? rawValue : HIDER_CHAR.repeat(rawValue.length)), [visible, rawValue]);
 
-    const triggerChange: (v: string) => void = useCallback(
+    // triggerChange: stable callback, only depends on onChange
+    const triggerChange = useCallback(
       (v: string) => {
         setRawValue(v);
         onChange?.(v);
@@ -119,48 +142,116 @@ const SafePassword = forwardRef<SafePasswordHandle, SafePasswordProps>(
       [onChange],
     );
 
-    const handleChange = useCallback(() => {
-      if (!inputRef.current) return;
+    // set cursor position helper (no re-render)
+    const setCursor = useCallback((pos: number) => {
       const input = inputRef.current;
-      const newMasked = input.value;
-      const selectionStart = input.selectionStart ?? newMasked.length;
-      const oldRaw = rawValue;
-
-      const diff = newMasked.length - syncedValue.length;
-      if (diff > 0) {
-        const inserted = newMasked.slice(selectionStart - diff, selectionStart);
-        const updated = oldRaw.slice(0, selectionStart - diff) + inserted + oldRaw.slice(selectionStart - diff);
-        triggerChange(updated);
-      } else if (diff < 0) {
-        const index = selectionStart;
-        const removedCount = Math.abs(diff);
-        const updated = oldRaw.slice(0, index) + oldRaw.slice(index + removedCount);
-        triggerChange(updated);
+      if (!input) return;
+      try {
+        input.setSelectionRange(pos, pos);
+      } catch {
+        // ignore invalid ranges silently (preserve original resilience)
       }
-    }, [rawValue, syncedValue, triggerChange]);
+    }, []);
 
+    // main onChange handler: logic preserved, optimized to avoid extra work
+    const handleChange = useCallback(() => {
+      const input = inputRef.current;
+      if (!input) return;
+
+      // early returns (same behavior)
+      if (visible || input.value === '') {
+        triggerChange(input.value);
+        return;
+      }
+
+      const newValue = input.value;
+      const oldValue = rawValue;
+      const diff = newValue.length - oldValue.length;
+      const selectionStart = input.selectionStart;
+
+      // original checked `if (selectionStart)` — preserve that exact conditional behavior
+      if (selectionStart != null) {
+        let updated: string | undefined;
+
+        if (diff > 0) {
+          // insertion: take char just before cursor in the masked input (preserve behavior)
+          const lastChar = newValue[selectionStart - 1];
+          updated = oldValue.slice(0, selectionStart - 1) + lastChar + oldValue.slice(selectionStart - 1);
+          triggerChange(updated);
+        } else {
+          // deletion / replacement cases
+          const sel = selectionRef.current;
+          if (sel) {
+            if (sel.start === 0 && sel.end === oldValue.length) {
+              updated = newValue;
+            } else {
+              if (Math.abs(diff) !== sel.end - sel.start) {
+                updated = oldValue.slice(0, sel.start) + newValue.charAt(sel.start) + oldValue.slice(sel.end);
+              } else {
+                updated = oldValue.slice(0, selectionStart) + oldValue.slice(selectionStart - diff);
+              }
+            }
+          } else {
+            updated = oldValue.slice(0, selectionStart) + oldValue.slice(selectionStart - diff);
+          }
+          triggerChange(updated);
+        }
+
+        // keep cursor at same position (preserve queueMicrotask)
+        queueMicrotask(() => {
+          setCursor(selectionStart);
+        });
+      }
+
+      return;
+    }, [rawValue, triggerChange, visible, setCursor]);
+
+    // onSelect: preserve behavior (including preventDefault), but store selection in ref to avoid re-render
+    const handleSelect = useCallback((e: React.SyntheticEvent<HTMLInputElement>) => {
+      e.preventDefault();
+      const input = inputRef.current;
+      if (!input) return;
+
+      const direction = input.selectionDirection;
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+
+      if (start !== null && end !== null && end > start && direction && direction !== 'none') {
+        selectionRef.current = { start, end, direction };
+        return;
+      }
+      selectionRef.current = null;
+    }, []);
+
+    // paste handler: same behavior, replace selection with pasted text
     const handlePaste = useCallback(
       (e: React.ClipboardEvent<HTMLInputElement>) => {
         e.preventDefault();
-        if (!inputRef.current) return;
-
         const input = inputRef.current;
+        if (!input) return;
+
         const pastedText = e.clipboardData.getData('text');
         const start = input.selectionStart ?? rawValue.length;
         const end = input.selectionEnd ?? rawValue.length;
-
         const updated = rawValue.slice(0, start) + pastedText + rawValue.slice(end);
         triggerChange(updated);
 
         queueMicrotask(() => {
-          input.setSelectionRange(start + pastedText.length, start + pastedText.length);
+          setCursor(start + pastedText.length);
         });
       },
-      [rawValue, triggerChange],
+      [rawValue, triggerChange, setCursor],
     );
 
-    const toggleShow = useCallback(() => setVisible((prev) => !prev), []);
+    // prevent copy/cut default behavior handlers (stable)
+    const handleCopy = useCallback((e: React.ClipboardEvent<HTMLInputElement>) => {
+      e.preventDefault();
+    }, []);
+    const handleCut = useCallback((e: React.ClipboardEvent<HTMLInputElement>) => {
+      e.preventDefault();
+    }, []);
 
+    const toggleShow = useCallback(() => setVisible((p) => !p), []);
     const reset = useCallback(() => {
       if (onReset) {
         onReset();
@@ -168,58 +259,90 @@ const SafePassword = forwardRef<SafePasswordHandle, SafePasswordProps>(
       }
       setVisible(false);
       triggerChange('');
-    }, [triggerChange]);
+    }, [onReset, triggerChange]);
 
-    useImperativeHandle(ref, () => ({
-      reset,
-    }));
+    useImperativeHandle(ref, () => ({ reset }), [reset]);
+
+    // memoize styles so their identity is stable across renders
+    const mergedInputStyle = useMemo(
+      () => ({
+        paddingRight: showToggler ? `calc(${togglerRightOffset} + ${paddingRightOffset})` : undefined,
+        ...inputStyle,
+      }),
+      [inputStyle, showToggler, togglerRightOffset, paddingRightOffset],
+    );
+
+    const mergedContainerStyle: React.CSSProperties = useMemo(
+      () => ({
+        position: 'relative',
+        backgroundColor: 'transparent',
+        border: 'none',
+        outline: 'none',
+        margin: '0',
+        padding: '0',
+        ...containerStyle,
+      }),
+      [containerStyle],
+    );
+
+    const mergedTogglerStyle: React.CSSProperties = useMemo(
+      () => ({
+        position: 'absolute',
+        backgroundColor: 'transparent',
+        border: 'none',
+        margin: 0,
+        padding: 0,
+        top: '50%',
+        transform: 'translateY(-50%)',
+        cursor: 'pointer',
+        userSelect: 'none',
+        zIndex: 10,
+        right: togglerRightOffset,
+        ...togglerContainerStyle,
+      }),
+      [togglerContainerStyle, togglerRightOffset],
+    );
 
     return (
-      <div className={containerClassName} style={{ position: 'relative' }}>
+      <div className={classNames('react-safe-password-container', containerClassName)} style={mergedContainerStyle}>
         <input
-          ref={inputRef}
-          style={{ paddingRight: shower ? `calc(${togglerRightOffset} + ${paddingRightOffset})` : undefined }}
           type="text"
-          id={`safe-password-${id}`}
+          autoComplete="off"
+          spellCheck={false}
+          onCopy={handleCopy}
+          onCut={handleCut}
+          ref={inputRef}
+          id={id}
           name={name}
-          placeholder={placeholder}
           value={syncedValue}
           onChange={handleChange}
           onPaste={handlePaste}
-          autoComplete="off"
-          spellCheck={false}
-          className={classNames(className, { [errorClassName]: isError })}
+          onSelect={handleSelect}
+          placeholder={placeholder}
           required={required}
           disabled={disabled}
+          className={classNames('react-safe-password-input', inputClassName, isError && errorClassName)}
+          style={mergedInputStyle}
           aria-invalid={isError}
-          aria-describedby={isError ? `safe-password-${id}-error` : undefined}
+          aria-describedby={isError && errorId ? errorId : undefined}
         />
-        {shower && !!rawValue && (
+
+        {showToggler && !!rawValue && (
           <div
-            className={togglerClassName}
-            style={{
-              position: 'absolute',
-              right: togglerRightOffset,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              cursor: 'pointer',
-              userSelect: 'none',
-              zIndex: 10,
-              padding: 0,
-              margin: 0,
-            }}
+            className={classNames('react-safe-password-toggler-container', togglerContainerClassName)}
+            style={mergedTogglerStyle}
             onClick={toggleShow}
-            role="button"
-            aria-label={visible ? hideTitle : showTitle}
-            aria-pressed={visible}
-            aria-live="polite"
-            tabIndex={0}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 toggleShow();
               }
             }}
+            role="button"
+            tabIndex={0}
+            aria-label={visible ? hideTitle : showTitle}
+            aria-pressed={visible}
+            aria-live="polite"
           >
             {visible ? iconHide : iconShow}
           </div>

@@ -1,24 +1,39 @@
 # react-safe-password
 
-A **secure, standalone React password input** component designed for modern applications. It works across all browsers without relying on browser password management features, ensuring your users' passwords are never auto-saved, suggested, or prefilled. Fully compatible with Formik for form integration.
+A **secure, standalone and fully customizable React password input** component designed for modern React applications. It works across all browsers without relying on browser password management features, ensuring your users' passwords are never auto-saved, suggested, prefilled, or copied. Fully compatible with Formik for form integration.
+
+---
+
+## GitHub
+
+[View the repository on GitHub](https://github.com/rantomh/react-safe-password.git)
 
 ---
 
 ## Key Features
 
-- **Safe & independent of the browser**
-  - No autocomplete
-  - No password suggestions
-  - No memorization by the browser
+* **Safe & independent of the browser**
 
-- Controlled or uncontrolled input values
-- Masked password input with customizable character
-- Toggle button to show/hide password
-- Customizable icons for show/hide
-- Supports standard HTML attributes (`placeholder`, `required`, `disabled`, etc.)
-- Minimal dependencies (`classnames` only)
-- Compatible with React 18+ and modern ESM projects
-- Works seamlessly with Formik or other form libraries
+  * No autocomplete
+  * No password suggestions
+  * No memorization by the browser
+  * Prevent copy and cut events
+
+* Controlled or uncontrolled input values
+
+* Toggle button to show/hide password
+
+* Customizable icons for show/hide
+
+* Supports standard HTML attributes (`placeholder`, `required`, `disabled`, etc.)
+
+* Minimal dependencies (`classnames` only)
+
+* Reset function accessible via handle ref
+
+* Compatible with React 18+ and modern ESM projects
+
+* Works seamlessly with Formik or other form libraries
 
 ---
 
@@ -40,30 +55,34 @@ import { FC, useRef } from 'react';
 import SafePassword, { SafePasswordHandle } from '@rantomah/react-safe-password';
 import { LoginReq } from '@domain/types/auth.type';
 
-interface Props {
+interface PasswordFieldProps {
   loading?: boolean;
 }
 
-const PasswordField: FC<Props> = ({ loading }) => {
-  const safePassRef = useRef<SafePasswordHandle>(null);
+interface SafePasswordRenderProps {
+  field: FieldInputProps<string>;
+  form: FormikProps<LoginReq>;
+}
+
+const PasswordField: FC<PasswordFieldProps> = ({ loading }) => {
+  const safePasswordRef = useRef<SafePasswordHandle>(null);
   return (
     <Field name="password">
-      {({ field, form }: { field: FieldInputProps<string>; form: FormikProps<LoginReq> }) => (
+      {({ field, form }: SafePasswordRenderProps) => (
         <SafePassword
-          ref={safePassRef}
+          ref={safePasswordRef}
           id="password"
           name="password"
           value={field.value}
           onChange={(value) => {
             form.setFieldValue('password', value);
           }}
-          showToggler={true}
           placeholder="Enter your password"
-          className="form-control"
+          inputClassName="form-control"
           errorClassName="form-error"
-          disabled={loading}
           isError={!!form.errors.password && form.touched.password}
-          required
+          disabled={loading}
+          showToggler
         />
       )}
     </Field>
@@ -71,34 +90,44 @@ const PasswordField: FC<Props> = ({ loading }) => {
 };
 
 export default PasswordField;
+
+/* reset dispatcher */
+const resetPassword = (ref: SafePasswordHandle) => {
+  ref.reset();
+}
 ```
 
 ---
 
 ## Props
 
-| Prop                 | Type                      | Default    | Description                                                      |
-| -------------------- | ------------------------- | ---------- | ---------------------------------------------------------------- |
-| `id`                 | `string`                  | —          | Unique ID for the input                                          |
-| `name`               | `string`                  | —          | Input name (for forms)                                           |
-| `value`              | `string`                  | —          | Controlled password value                                        |
-| `onChange`           | `(value: string) => void` | —          | Callback fired when value changes                                |
-| `isError`            | `boolean`                 | `false`    | Marks the input as having an error                               |
-| `placeholder`        | `string`                  | —          | Input placeholder text                                           |
-| `showToggler`        | `boolean`                 | `false`    | Show the toggle button to reveal/hide password                   |
-| `togglerRightOffset` | `string`                  | `"1rem"`   | Right offset for the toggle button                               |
-| `paddingRightOffset` | `string`                  | `"1.5rem"` | Right padding for the input to avoid overlapping with the toggle |
-| `className`          | `string`                  | `""`       | CSS class for the input                                          |
-| `errorClassName`     | `string`                  | `""`       | CSS class applied when the input has an error                    |
-| `containerClassName` | `string`                  | `""`       | CSS class for the container                                      |
-| `togglerClassName`   | `string`                  | `""`       | CSS class for the toggle button                                  |
-| `hideTitle`          | `string`                  | `"Hide"`   | Label for toggle when password is hidden                         |
-| `showTitle`          | `string`                  | `"Show"`   | Label for toggle when password is visible                        |
-| `required`           | `boolean`                 | `false`    | Marks the input as required                                      |
-| `disabled`           | `boolean`                 | `false`    | Disables the input                                               |
-| `iconShow`           | `React.ReactNode`         | —          | Custom icon to show password                                     |
-| `iconHide`           | `React.ReactNode`         | —          | Custom icon to hide password                                     |
-| `onReset`            | `() => void`              | —          | Callback fired when reset is called                              |
+| Prop                        | Type                   | Default    | Description                                                                                         |
+| --------------------------- | ---------------------- | ---------- | --------------------------------------------------------------------------------------------------- |
+| `id`                        | `string`               | —          | Unique identifier for the input. Used for accessibility and form linkage.                           |
+| `name`                      | `string`               | —          | Name of the input, typically used inside forms.                                                     |
+| `value`                     | `string`               | —          | Controlled value of the password input.                                                             |
+| `onChange`                  | `(value:string)=>void` | —          | Callback fired when the input value changes.                                                        |
+| `placeholder`               | `string`               | —          | Placeholder text shown when the input is empty.                                                     |
+| `required`                  | `boolean`              | `false`    | Marks the input as required for form submission.                                                    |
+| `disabled`                  | `boolean`              | `false`    | Disables the input.                                                                                 |
+| `isError`                   | `boolean`              | `false`    | Visually marks the input as having an error.                                                        |
+| `showToggler`               | `boolean`              | `false`    | Shows the password visibility toggle button.                                                        |
+| `togglerRightOffset`        | `string`               | `"1rem"`   | Right offset for the toggler container (applies only when `showToggler` is true).                   |
+| `paddingRightOffset`        | `string`               | `"1.5rem"` | Adds right padding to the input to prevent overlapping with the toggler.                            |
+| `inputClassName`            | `string`               | `""`       | Custom CSS class applied to the input element.                                                      |
+| `errorClassName`            | `string`               | `""`       | Custom CSS class applied when the input is in error state.                                          |
+| `containerClassName`        | `string`               | `""`       | Custom CSS class applied to the outer container.                                                    |
+| `togglerContainerClassName` | `string`               | `""`       | Custom CSS class applied to the toggler button container.                                           |
+| `containerStyle`            | `React.CSSProperties`  | —          | Inline style applied to the container, overrides all classNames.                                    |
+| `inputStyle`                | `React.CSSProperties`  | —          | Inline style applied to the input, overrides all classNames.                                        |
+| `togglerContainerStyle`     | `React.CSSProperties`  | —          | Inline style applied to the toggler container, overrides all classNames.                            |
+| `hideTitle`                 | `string`               | `"Hide"`   | Label for the toggler when hiding the password.                                                     |
+| `showTitle`                 | `string`               | `"Show"`   | Label for the toggler when showing the password.                                                    |
+| `iconShow`                  | `React.ReactNode`      | —          | Custom icon displayed when the password is hidden.                                                  |
+| `iconHide`                  | `React.ReactNode`      | —          | Custom icon displayed when the password becomes visible.                                            |
+| `onReset`                   | `()=>void`             | —          | Callback triggered when the input is reset.                                                         |
+| `errorId`                   | `string`               | —          | ID of the element containing error text (for ARIA accessibility).                                   |
+
 
 ---
 
@@ -106,11 +135,14 @@ export default PasswordField;
 
 `react-safe-password` **ensures maximum privacy for passwords**:
 
-- Uses custom masking (`•`) instead of `type="password"` for full control
-- Prevents autocomplete and password manager suggestions
-- Avoids storing the password in browser memory
-- Works consistently across all modern browsers
-- No external services or browser APIs are used
+* Uses `type="text"` with custom masking (`•`) instead of `type="password"` for full control
+* Prevents autocomplete and password manager suggestions
+* Avoids browser new password suggestion
+* Avoids storing the password in browser memory
+* Prevent copy and cut actions
+* Works consistently across all modern browsers
+* No external services or browser APIs are used
+* Fully customizable style
 
 ---
 
@@ -122,5 +154,5 @@ MIT © Rantomah
 
 ## Author
 
-**Rantomah** [Linkedin](https://www.linkedin.com/in/rantomah)\
+**Rantomah** [Linkedin](https://www.linkedin.com/in/rantomah)
 Senior Fullstack Developer & Software Architect
