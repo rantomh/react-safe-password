@@ -1,5 +1,5 @@
 import classNames from 'classnames';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 
 const EyeIcon = (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -123,13 +123,6 @@ const SafePassword = forwardRef<SafePasswordHandle, SafePasswordProps>(
     // selection stored in a ref to avoid re-renders when selection changes
     const selectionRef = useRef<Selection | null>(null);
 
-    // keep external value in sync (preserve original behavior)
-    useEffect(() => {
-      if (value !== undefined && value !== rawValue) {
-        setRawValue(value);
-      }
-    }, [value, rawValue]);
-
     // masked or raw displayed value
     const syncedValue = useMemo(() => (visible ? rawValue : HIDER_CHAR.repeat(rawValue.length)), [visible, rawValue]);
 
@@ -153,7 +146,7 @@ const SafePassword = forwardRef<SafePasswordHandle, SafePasswordProps>(
       }
     }, []);
 
-    // main onChange handler: logic preserved, optimized to avoid extra work
+    // main onChange handler
     const handleChange = useCallback(() => {
       const input = inputRef.current;
       if (!input) return;
@@ -169,41 +162,41 @@ const SafePassword = forwardRef<SafePasswordHandle, SafePasswordProps>(
       const diff = newValue.length - oldValue.length;
       const selectionStart = input.selectionStart;
 
-      // original checked `if (selectionStart)` — preserve that exact conditional behavior
-      if (selectionStart != null) {
-        let updated: string | undefined;
+      if (selectionStart === null) return;
 
-        if (diff > 0) {
-          // insertion: take char just before cursor in the masked input (preserve behavior)
-          const lastChar = newValue[selectionStart - 1];
-          updated = oldValue.slice(0, selectionStart - 1) + lastChar + oldValue.slice(selectionStart - 1);
-          triggerChange(updated);
-        } else {
-          // deletion / replacement cases
-          const sel = selectionRef.current;
-          if (sel) {
-            if (sel.start === 0 && sel.end === oldValue.length) {
-              updated = newValue;
-            } else {
-              if (Math.abs(diff) !== sel.end - sel.start) {
-                updated = oldValue.slice(0, sel.start) + newValue.charAt(sel.start) + oldValue.slice(sel.end);
-              } else {
-                updated = oldValue.slice(0, selectionStart) + oldValue.slice(selectionStart - diff);
-              }
-            }
-          } else {
-            updated = oldValue.slice(0, selectionStart) + oldValue.slice(selectionStart - diff);
-          }
-          triggerChange(updated);
+      let updated: string | undefined;
+
+      const handleInsertion = () => {
+        const lastChar = newValue[selectionStart - 1];
+        return oldValue.slice(0, selectionStart - 1) + lastChar + oldValue.slice(selectionStart - 1);
+      };
+
+      const handleDeletionReplacement = () => {
+        const sel = selectionRef.current;
+        if (sel && sel.start === 0 && sel.end === oldValue.length) return newValue;
+
+        const selStart = sel?.start ?? selectionStart;
+        const selEnd = sel?.end ?? selectionStart;
+
+        if (Math.abs(diff) === selEnd - selStart) {
+          return oldValue.slice(0, selectionStart) + oldValue.slice(selectionStart - diff);
         }
 
-        // keep cursor at same position (preserve queueMicrotask)
-        queueMicrotask(() => {
-          setCursor(selectionStart);
-        });
+        return oldValue.slice(0, selStart) + newValue.charAt(selStart) + oldValue.slice(selEnd);
+      };
+
+      if (diff > 0) {
+        updated = handleInsertion();
+      } else {
+        updated = handleDeletionReplacement();
       }
 
-      return;
+      triggerChange(updated);
+
+      // keep cursor at same position (preserve queueMicrotask)
+      queueMicrotask(() => {
+        setCursor(selectionStart);
+      });
     }, [rawValue, triggerChange, visible, setCursor]);
 
     // onSelect: preserve behavior (including preventDefault), but store selection in ref to avoid re-render
@@ -223,7 +216,7 @@ const SafePassword = forwardRef<SafePasswordHandle, SafePasswordProps>(
       selectionRef.current = null;
     }, []);
 
-    // paste handler: same behavior, replace selection with pasted text
+    // replace selection with pasted text
     const handlePaste = useCallback(
       (e: React.ClipboardEvent<HTMLInputElement>) => {
         e.preventDefault();
@@ -243,7 +236,7 @@ const SafePassword = forwardRef<SafePasswordHandle, SafePasswordProps>(
       [rawValue, triggerChange, setCursor],
     );
 
-    // prevent copy/cut default behavior handlers (stable)
+    // prevent copy/cut default behavior handlers
     const handleCopy = useCallback((e: React.ClipboardEvent<HTMLInputElement>) => {
       e.preventDefault();
     }, []);
@@ -263,7 +256,6 @@ const SafePassword = forwardRef<SafePasswordHandle, SafePasswordProps>(
 
     useImperativeHandle(ref, () => ({ reset }), [reset]);
 
-    // memoize styles so their identity is stable across renders
     const mergedInputStyle = useMemo(
       () => ({
         paddingRight: showToggler ? `calc(${togglerRightOffset} + ${paddingRightOffset})` : undefined,

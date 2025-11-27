@@ -90,7 +90,9 @@ const PasswordField: FC<PasswordFieldProps> = ({ loading }) => {
 };
 
 export default PasswordField;
+```
 
+```tsx
 /* reset dispatcher */
 const resetPassword = (ref: SafePasswordHandle) => {
   ref.reset();
@@ -101,33 +103,30 @@ const resetPassword = (ref: SafePasswordHandle) => {
 
 ## Props
 
-| Prop                        | Type                   | Default    | Description                                                                                         |
-| --------------------------- | ---------------------- | ---------- | --------------------------------------------------------------------------------------------------- |
-| `id`                        | `string`               | —          | Unique identifier for the input. Used for accessibility and form linkage.                           |
-| `name`                      | `string`               | —          | Name of the input, typically used inside forms.                                                     |
-| `value`                     | `string`               | —          | Controlled value of the password input.                                                             |
-| `onChange`                  | `(value:string)=>void` | —          | Callback fired when the input value changes.                                                        |
-| `placeholder`               | `string`               | —          | Placeholder text shown when the input is empty.                                                     |
-| `required`                  | `boolean`              | `false`    | Marks the input as required for form submission.                                                    |
-| `disabled`                  | `boolean`              | `false`    | Disables the input.                                                                                 |
-| `isError`                   | `boolean`              | `false`    | Visually marks the input as having an error.                                                        |
-| `showToggler`               | `boolean`              | `false`    | Shows the password visibility toggle button.                                                        |
-| `togglerRightOffset`        | `string`               | `"1rem"`   | Right offset for the toggler container (applies only when `showToggler` is true).                   |
-| `paddingRightOffset`        | `string`               | `"1.5rem"` | Adds right padding to the input to prevent overlapping with the toggler.                            |
-| `inputClassName`            | `string`               | `""`       | Custom CSS class applied to the input element.                                                      |
-| `errorClassName`            | `string`               | `""`       | Custom CSS class applied when the input is in error state.                                          |
-| `containerClassName`        | `string`               | `""`       | Custom CSS class applied to the outer container.                                                    |
-| `togglerContainerClassName` | `string`               | `""`       | Custom CSS class applied to the toggler button container.                                           |
-| `containerStyle`            | `React.CSSProperties`  | —          | Inline style applied to the container, overrides all classNames.                                    |
-| `inputStyle`                | `React.CSSProperties`  | —          | Inline style applied to the input, overrides all classNames.                                        |
-| `togglerContainerStyle`     | `React.CSSProperties`  | —          | Inline style applied to the toggler container, overrides all classNames.                            |
-| `hideTitle`                 | `string`               | `"Hide"`   | Label for the toggler when hiding the password.                                                     |
-| `showTitle`                 | `string`               | `"Show"`   | Label for the toggler when showing the password.                                                    |
-| `iconShow`                  | `React.ReactNode`      | —          | Custom icon displayed when the password is hidden.                                                  |
-| `iconHide`                  | `React.ReactNode`      | —          | Custom icon displayed when the password becomes visible.                                            |
-| `onReset`                   | `()=>void`             | —          | Callback triggered when the input is reset.                                                         |
-| `errorId`                   | `string`               | —          | ID of the element containing error text (for ARIA accessibility).                                   |
-
+- **`id`** (`string`) — Unique identifier for the input. Used for accessibility and form linkage.
+- **`name`** (`string`) — Name of the input, typically used inside forms.
+- **`value`** (`string`) — Controlled value of the password input.
+- **`onChange`** (`(value: string) => void`) — Callback fired when the input value changes.
+- **`placeholder`** (`string`) — Placeholder text shown when the input is empty.
+- **`required`** (`boolean`, default: `false`) — Marks the input as required for form submission.
+- **`disabled`** (`boolean`, default: `false`) — Disables the input.
+- **`isError`** (`boolean`, default: `false`) — Visually marks the input as having an error.
+- **`showToggler`** (`boolean`, default: `false`) — Shows the password visibility toggle button.
+- **`togglerRightOffset`** (`string`, default: `"1rem"`) — Right offset for the toggler container (applies only when `showToggler` is true).
+- **`paddingRightOffset`** (`string`, default: `"1.5rem"`) — Adds right padding to the input to prevent overlapping with the toggler.
+- **`inputClassName`** (`string`, default: `""`) — Custom CSS class applied to the input element.
+- **`errorClassName`** (`string`, default: `""`) — Custom CSS class applied when the input is in error state.
+- **`containerClassName`** (`string`, default: `""`) — Custom CSS class applied to the outer container.
+- **`togglerContainerClassName`** (`string`, default: `""`) — Custom CSS class applied to the toggler button container.
+- **`containerStyle`** (`React.CSSProperties`) — Inline style applied to the container, overrides all classNames.
+- **`inputStyle`** (`React.CSSProperties`) — Inline style applied to the input, overrides all classNames.
+- **`togglerContainerStyle`** (`React.CSSProperties`) — Inline style applied to the toggler container, overrides all classNames.
+- **`hideTitle`** (`string`, default: `"Hide"`) — Label for the toggler when hiding the password.
+- **`showTitle`** (`string`, default: `"Show"`) — Label for the toggler when showing the password.
+- **`iconShow`** (`React.ReactNode`) — Custom icon displayed when the password is hidden.
+- **`iconHide`** (`React.ReactNode`) — Custom icon displayed when the password becomes visible.
+- **`onReset`** (`() => void`) — Callback triggered when the input is reset.
+- **`errorId`** (`string`) — ID of the element containing error text (for ARIA accessibility).
 
 ---
 
@@ -154,5 +153,5 @@ MIT © Rantomah
 
 ## Author
 
-**Rantomah** [Linkedin](https://www.linkedin.com/in/rantomah)
+**Rantomah** [Linkedin](https://www.linkedin.com/in/rantomah)\
 Senior Fullstack Developer & Software Architect
